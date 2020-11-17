@@ -9,24 +9,6 @@ tests = []
 tests_aux = []
 
 
-# t1 = Test(1, True, "test 1", 1)
-# t2 = Test(2, True, "test sub1", 2)
-# t3 = Test(3, True, "test sub sub1", 3)
-#
-# tests_aux.append(t1)
-# tests_aux.append(t2)
-# tests_aux.append(t3)
-
-
-# t4 = Test(4, True, "test 2", 1)
-# t2.subtests.append(t3)
-# t1.subtests.append(t2)
-# tests.append(t1)
-# tests.append(t4)
-#
-# for t in tests:
-#     t.printTests()
-
 def auxOrg(test, listX):
     level = test.nivel
     if listX == None:
@@ -38,7 +20,8 @@ def auxOrg(test, listX):
         elif nivel == level:
             if nivel == 1:
                 aux = listX[-1]
-                listX[-1] = test
+                listX.clear()
+                listX.append(test)
                 return aux
             else:
                 listX[-2].subtests.append(listX[-1])
@@ -53,7 +36,7 @@ def auxOrg(test, listX):
                 nivel = listX[-1].nivel
             if nivel == 1:
                 aux = listX[-1]
-                del listX[-1]
+                listX.clear()
                 listX.append(test)
                 return aux
             else:
@@ -83,7 +66,7 @@ def t_SUBOK(t):
 
 
 def t_NOTOK(t):
-    r"^not\sok.+\n"
+    r"not\sok.+\n"
     return t
 
 
@@ -108,7 +91,7 @@ def t_error(t):
 
 
 lexer = lex.lex()
-lexer.input(readFile("test/testedummy.t"))
+lexer.input(readFile("test/teste6.t"))
 
 for token in iter(lexer.token, None):
     taux = None
@@ -116,12 +99,15 @@ for token in iter(lexer.token, None):
         ws = getNivel(token.value)
         saux = token.value.strip()
         taux = Test(saux[3], True, saux[6:], ws)
+    if token.type == "SUBNOTOK":
+        ws = getNivel(token.value)
+        saux = token.value.strip()
+        taux = Test(saux[7], False, saux[11:], ws)
     if token.type == "OK":
         taux = Test(int(token.value[3]), True, token.value[6:], 1)
     if token.type == "NOTOK":
         taux = Test(int(token.value[7]), False, token.value[11:], 1)
     if taux:
-
         nivel = taux.nivel
         if tests_aux:
             if nivel == 1:
@@ -139,5 +125,9 @@ while tests_aux[-1].nivel != 1:
 
 tests.append(tests_aux[0])
 
+
+# for test_ in tests:
+#     test_.printTests()
+
 for test_ in tests:
-    test_.printTests()
+    print(test_.printHTML())
