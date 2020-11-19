@@ -24,9 +24,9 @@ class Test:
 
     def getPrint(self):
         if self.ok:
-            return "ok %s - %s" % (self.id, self.desc)
+            return "ok %s %s" % (self.id, self.desc)
         else:
-            return "not ok %s - %s" % (self.id, self.desc)
+            return "not ok %s %s" % (self.id, self.desc)
 
     def printTests(self):
         tabs=""

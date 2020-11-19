@@ -1,6 +1,7 @@
 # import re
 import time
 from itertools import tee
+import re
 
 import ply.lex as lex
 from utils import readFile, Test, getNivel
@@ -46,6 +47,7 @@ def auxOrg(test, listX):
                 listX.append(test)
                 return aux
 
+#region RegEx
 
 tokens = ("OK", "NOTOK", "SUBOK", "SUBNOTOK", "TAB", "COMMENT", "COUNTER")
 
@@ -89,24 +91,29 @@ def t_error(t):
     print("Unknown token: [%s]" % t.value)
     exit(1)
 
+#endregion
 
 lexer = lex.lex()
-lexer.input(readFile("test/teste6.t"))
+lexer.input(readFile("test/testedummy.t"))
 
 for token in iter(lexer.token, None):
     taux = None
     if token.type == "SUBOK":
         ws = getNivel(token.value)
         saux = token.value.strip()
-        taux = Test(saux[3], True, saux[6:], ws)
+        captures = re.fullmatch(r"(\s{4})+ok\s(\d+)(.*)\n", token.value)
+        taux = Test(captures.group(2), True, captures.group(3), ws)
     if token.type == "SUBNOTOK":
         ws = getNivel(token.value)
         saux = token.value.strip()
-        taux = Test(saux[7], False, saux[11:], ws)
+        captures = re.fullmatch(r"(\s{4})+not\sok\s(\d+)(.*)\n", token.value)
+        taux = Test(captures.group(2), False, captures.group(3), ws)
     if token.type == "OK":
-        taux = Test(int(token.value[3]), True, token.value[6:], 1)
+        captures = re.fullmatch(r"ok\s(\d+)(.*)\n", token.value)
+        taux = Test(captures.group(1), True, captures.group(2), 1)
     if token.type == "NOTOK":
-        taux = Test(int(token.value[7]), False, token.value[11:], 1)
+        captures = re.fullmatch(r"not\sok\s(\d+)(.*)\n", token.value)
+        taux = Test(captures.group(1), False, captures.group(2), 1)
     if taux:
         nivel = taux.nivel
         if tests_aux:
@@ -126,8 +133,8 @@ while tests_aux[-1].nivel != 1:
 tests.append(tests_aux[0])
 
 
-# for test_ in tests:
-#     test_.printTests()
-
 for test_ in tests:
-    print(test_.printHTML())
+    test_.printTests()
+
+# for test_ in tests:
+#     print(test_.printHTML())
