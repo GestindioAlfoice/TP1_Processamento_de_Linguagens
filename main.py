@@ -2,10 +2,11 @@
 import time
 from itertools import tee
 import re
-
 import ply.lex as lex
-from utils import readFile, Test, getNivel
+from utils import htmlHomeFormatter, readTestFolder, readFile, Test, getNivel, htmlFormatter
 
+
+hash = []
 tests = []
 tests_aux = []
 
@@ -94,47 +95,53 @@ def t_error(t):
 #endregion
 
 lexer = lex.lex()
-lexer.input(readFile("test/testedummy.t"))
+testFileNames = readTestFolder()
 
-for token in iter(lexer.token, None):
-    taux = None
-    if token.type == "SUBOK":
-        ws = getNivel(token.value)
-        saux = token.value.strip()
-        captures = re.fullmatch(r"(\s{4})+ok\s(\d+)(.*)\n", token.value)
-        taux = Test(captures.group(2), True, captures.group(3), ws)
-    if token.type == "SUBNOTOK":
-        ws = getNivel(token.value)
-        saux = token.value.strip()
-        captures = re.fullmatch(r"(\s{4})+not\sok\s(\d+)(.*)\n", token.value)
-        taux = Test(captures.group(2), False, captures.group(3), ws)
-    if token.type == "OK":
-        captures = re.fullmatch(r"ok\s(\d+)(.*)\n", token.value)
-        taux = Test(captures.group(1), True, captures.group(2), 1)
-    if token.type == "NOTOK":
-        captures = re.fullmatch(r"not\sok\s(\d+)(.*)\n", token.value)
-        taux = Test(captures.group(1), False, captures.group(2), 1)
-    if taux:
-        nivel = taux.nivel
-        if tests_aux:
-            if nivel == 1:
-                a = auxOrg(taux, tests_aux)
-                if a:
-                    tests.append(a)
+# Cria um ficheiro HTML para cada Teste
+for i in testFileNames:
+    lexer.input(readFile(i))
+
+    for token in iter(lexer.token, None):
+        taux = None
+        if token.type == "SUBOK":
+            ws = getNivel(token.value)
+            saux = token.value.strip()
+            captures = re.fullmatch(r"(\s{4})+ok\s(\d+)(.*)\n", token.value)
+            taux = Test(captures.group(2), True, captures.group(3), ws)
+        if token.type == "SUBNOTOK":
+            ws = getNivel(token.value)
+            saux = token.value.strip()
+            captures = re.fullmatch(r"(\s{4})+not\sok\s(\d+)(.*)\n", token.value)
+            taux = Test(captures.group(2), False, captures.group(3), ws)
+        if token.type == "OK":
+            captures = re.fullmatch(r"ok\s(\d+)(.*)\n", token.value)
+            taux = Test(captures.group(1), True, captures.group(2), 1)
+        if token.type == "NOTOK":
+            captures = re.fullmatch(r"not\sok\s(\d+)(.*)\n", token.value)
+            taux = Test(captures.group(1), False, captures.group(2), 1)
+        if taux:
+            nivel = taux.nivel
+            if tests_aux:
+                if nivel == 1:
+                    a = auxOrg(taux, tests_aux)
+                    if a:
+                        tests.append(a)
+                else:
+                    auxOrg(taux, tests_aux)
             else:
-                auxOrg(taux, tests_aux)
-        else:
-            tests_aux.append(taux)
+                tests_aux.append(taux)
 
-while tests_aux[-1].nivel != 1:
-    tests_aux[-2].subtests.append(tests_aux[-1])
-    del tests_aux[-1]
+    while tests_aux[-1].nivel != 1:
+        tests_aux[-2].subtests.append(tests_aux[-1])
+        del tests_aux[-1]
 
-tests.append(tests_aux[0])
+    tests.append(tests_aux[0])
+    htmlFormatter(tests, i)
+    tests = []
+    tests_aux = []
+
+#Cria uma pagina HTML para poder aceder aos testes
+htmlHomeFormatter()
 
 
-for test_ in tests:
-    test_.printTests()
 
-# for test_ in tests:
-#     print(test_.printHTML())
