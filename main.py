@@ -1,61 +1,24 @@
 # import re
+import sys
 import time
 from itertools import tee
 import re
 import ply.lex as lex
-from utils import htmlHomeFormatter, readTestFolder, readFile, Test, getNivel, htmlFormatter
+from utils import htmlIndexFormatter, readTestFolder, readFile, Test, getNivel, htmlFormatter, auxOrg
 
-
-hash = []
 tests = []
 tests_aux = []
+total = 0
+total_notok = 0
 
-
-def auxOrg(test, listX):
-    level = test.nivel
-    if listX == None:
-        listX.append(test)
-    else:
-        nivel = listX[-1].nivel
-        if nivel < level:
-            listX.append(test)
-        elif nivel == level:
-            if nivel == 1:
-                aux = listX[-1]
-                listX.clear()
-                listX.append(test)
-                return aux
-            else:
-                listX[-2].subtests.append(listX[-1])
-                aux = listX[-1]
-                del listX[-1]
-                listX.append(test)
-                return aux
-        else:
-            while nivel != level:
-                listX[-2].subtests.append(listX[-1])
-                del listX[-1]
-                nivel = listX[-1].nivel
-            if nivel == 1:
-                aux = listX[-1]
-                listX.clear()
-                listX.append(test)
-                return aux
-            else:
-                listX[-2].subtests.append(listX[-1])
-                aux = listX[-1]
-                del listX[-1]
-                listX.append(test)
-                return aux
-
-#region RegEx
+# region RegEx
 
 tokens = ("OK", "NOTOK", "SUBOK", "SUBNOTOK", "TAB", "COMMENT", "COUNTER")
 
 
 def t_COUNTER(t):
     r"\d.+.\n"
-    return t
+    pass
 
 
 def t_OK(t):
@@ -85,17 +48,18 @@ def t_TAB(t):
 
 def t_COMMENT(t):
     r"\n|[ \t].*\n|.+\n"
-    return t
+    pass
 
 
 def t_error(t):
     print("Unknown token: [%s]" % t.value)
     exit(1)
 
-#endregion
+
+# endregion
 
 lexer = lex.lex()
-testFileNames = readTestFolder()
+testFileNames = readTestFolder(sys.argv[1])
 
 # Cria um ficheiro HTML para cada Teste
 for i in testFileNames:
@@ -116,9 +80,12 @@ for i in testFileNames:
         if token.type == "OK":
             captures = re.fullmatch(r"ok\s(\d+)(.*)\n", token.value)
             taux = Test(captures.group(1), True, captures.group(2), 1)
+            total += 1
         if token.type == "NOTOK":
             captures = re.fullmatch(r"not\sok\s(\d+)(.*)\n", token.value)
             taux = Test(captures.group(1), False, captures.group(2), 1)
+            total += 1
+            total_notok += 1
         if taux:
             nivel = taux.nivel
             if tests_aux:
@@ -136,12 +103,11 @@ for i in testFileNames:
         del tests_aux[-1]
 
     tests.append(tests_aux[0])
-    htmlFormatter(tests, i)
+    htmlFormatter(tests, i, sys.argv[1], total, total_notok)
     tests = []
     tests_aux = []
+    total = 0
+    total_notok = 0
 
-#Cria uma pagina HTML para poder aceder aos testes
-htmlHomeFormatter()
-
-
-
+# Cria uma pagina HTML para poder aceder aos testes
+htmlIndexFormatter()

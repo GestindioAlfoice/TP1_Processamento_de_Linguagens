@@ -2,11 +2,10 @@
 import os
 import glob
 
-def readTestFolder():
+def readTestFolder(path):
     testFiles = []
-    for i in glob.glob(r'test\\*.t'):
+    for i in glob.glob(rf'{path}\\*.t'):
         testFiles.append(i)
-
     return testFiles
 
 def readFile(filename):
@@ -15,13 +14,14 @@ def readFile(filename):
     fh.close()
     return contents
 
+#atraves do numero de espacos antes da string verifica o nivel do teste
 def getNivel(string):
     ws = len(string) - len(string.lstrip())
     ws=ws/4
     ws+=1
     return int(ws)
 
-
+#Classe para guardar as informações do dos testes
 class Test:
     def __init__(self, id, ok, desc,nivel):
         self.id = id
@@ -139,13 +139,55 @@ class Test:
         for test_ in self.subtests:
             test_.printTests()
 
+#organiza o array e deteta as diferencas de niveis
+def auxOrg(test, listX):
+    level = test.nivel
+    if listX == None:
+        listX.append(test)
+    else:
+        nivel = listX[-1].nivel
+        if nivel < level:
+            listX.append(test)
+        elif nivel == level:
+            if nivel == 1:
+                aux = listX[-1]
+                listX.clear()
+                listX.append(test)
+                return aux
+            else:
+                listX[-2].subtests.append(listX[-1])
+                aux = listX[-1]
+                del listX[-1]
+                listX.append(test)
+                return aux
+        else:
+            while nivel != level:
+                listX[-2].subtests.append(listX[-1])
+                del listX[-1]
+                nivel = listX[-1].nivel
+            if nivel == 1:
+                aux = listX[-1]
+                listX.clear()
+                listX.append(test)
+                return aux
+            else:
+                listX[-2].subtests.append(listX[-1])
+                aux = listX[-1]
+                del listX[-1]
+                listX.append(test)
+                return aux
 
+#cria o ficheiro html com o relatorio de cada teste
+def htmlFormatter(tests, filename,testpath,total,not_ok):
+    path = str(os.path.dirname(os.path.abspath(__file__)) + "\\html")
+    if not os.path.exists(path):
+        os.mkdir(path)
 
-def htmlFormatter(tests, filename):
-    filename = filename.replace("test\\", "html\\")
-    filename = filename.replace(".t", "")
+    filename = filename.replace(f"{testpath}\\", "")
+    filename = filename.replace(".t", ".html")
+    filename = path + "\\" +filename
 
-    Html_file = open(filename + ".html", "w")
+    Html_file = open(filename, "w")
     pagina = ""
 
     Html_file.write('''<!DOCTYPE html>
@@ -250,25 +292,25 @@ def htmlFormatter(tests, filename):
 
 <div class="sidenav">
     <a href="https://testanything.org"><h1 style="size:20px">Test Anything Protocol</h1></a>
-    <a href="htmlhome.html">HOME</a>
+    <a href="index.html">HOME</a>
     <div>
     <table class="table table-hover table-secondary">
       <tbody>
         <tr>
           <th scope="row">Number of Tests:</th>
-          <td>4</td>
+          <td>'''+str(total)+'''</td>
         </tr>
         <tr>
           <th scope="row">Successful Tests:</th>
-          <td>3</td>
+          <td>'''+str(total-not_ok)+'''</td>
         </tr>
         <tr>
           <th scope="row">Unsuccessful Tests:</th>
-          <td>1</td>
+          <td>'''+str(not_ok)+'''</td>
         </tr>
         <tr>
           <th scope="row">Percentage of Success:</th>
-          <td>75%</td>
+          <td>'''+str(round(((total-not_ok)/total)*100,2))+'''%</td>
         </tr>
       </tbody>
     </table>
@@ -292,17 +334,18 @@ def htmlFormatter(tests, filename):
 
     Html_file.close
 
+#verifica os ficheiros html dentro da pasta para criar o index
 def readHtmlFolder():
     htmlFiles = []
     for i in glob.glob(r'html\\*.html'):
-        if i != "html\\htmlhome.html":
+        if i != "html\\index.html":
             htmlFiles.append(i)
 
     return htmlFiles
 
-
-def htmlHomeFormatter():
-    htmlHomeFile = open("html\\htmlhome.html", "w")
+#cria index.html
+def htmlIndexFormatter():
+    htmlHomeFile = open("html\\index.html", "w")
     htmlFiles = readHtmlFolder()
 
     htmlHomeFile.write('''<!DOCTYPE html>
